@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Writer Pro - English Writing Assistant</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #1a1a2e;
+            --text2: #555;
+            --border: #e0e0e0;
+            --primary: #667eea;
+            --primary2: #764ba2;
+            --accent: #4CAF50;
+            --shadow: 0 8px 32px rgba(0,0,0,0.1);
+            --radius: 16px;
+        }
+        body.dark {
+            --bg: #0f0f23;
+            --card: #1a1a2e;
+            --text: #e0e0e0;
+            --text2: #999;
+            --border: #2a2a4a;
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            color: var(--text);
+            transition: background 0.3s, color 0.3s;
+        }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 0; margin-bottom: 8px;
+        }
+        .logo { font-size: 22px; font-weight: 700; background: linear-gradient(135deg, var(--primary), var(--primary2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo span { -webkit-text-fill-color: initial; color: var(--text); }
+        .dark-toggle {
+            background: var(--card); border: 2px solid var(--border); border-radius: 10px;
+            padding: 8px 14px; cursor: pointer; font-size: 18px; color: var(--text);
+            transition: all 0.3s;
+        }
+        .dark-toggle:hover { border-color: var(--primary); }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; background: var(--card); padding: 4px; border-radius: 12px; border: 1px solid var(--border); }
+        .tab {
+            flex: 1; padding: 10px 16px; text-align: center; border-radius: 10px;
+            border: none; background: transparent; font-size: 14px; font-weight: 500;
+            cursor: pointer; color: var(--text2); transition: all 0.3s;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active { background: linear-gradient(135deg, var(--primary), var(--primary2)); color: white; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .card {
+            background: var(--card); border-radius: var(--radius);
+            padding: 28px; box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+
+        /* Mode buttons */
+        .modes { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+        .mode-btn {
+            padding: 7px 16px; border: 2px solid var(--border); border-radius: 20px;
+            background: transparent; cursor: pointer; font-size: 13px; font-weight: 500;
+            color: var(--text2); transition: all 0.3s;
+        }
+        .mode-btn:hover { border-color: var(--primary); color: var(--text); }
+        .mode-btn.active { border-color: var(--primary); background: var(--primary); color: white; }
+
+        textarea {
+            width: 100%; min-height: 140px; padding: 16px;
+            border: 2px solid var(--border); border-radius: 12px;
+            font-size: 15px; font-family: inherit; resize: vertical;
+            background: var(--card); color: var(--text);
+            transition: border-color 0.3s;
+        }
+        textarea:focus { outline: none; border-color: var(--primary); }
+
+        .char-count { text-align: right; font-size: 12px; color: var(--text2); margin-top: 6px; }
+
+        .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+        .btn {
+            flex: 1; padding: 13px; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary2));
+            color: white; transition: transform 0.2s, opacity 0.2s;
+        }
+        .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-secondary {
+            background: transparent; border: 2px solid var(--border); color: var(--text);
+        }
+        .btn-secondary:hover { border-color: var(--primary); }
+
+        .result-box { margin-top: 20px; display: none; }
+        .result-box.show { display: block; }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .result-label { font-size: 13px; font-weight: 600; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .result-actions { display: flex; gap: 8px; }
+        .result-actions button {
+            padding: 6px 14px; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.3s;
+        }
+        .copy-btn { background: var(--accent); color: white; }
+        .copy-btn:hover { opacity: 0.9; }
+        .result-text {
+            padding: 16px; background: var(--bg); border-radius: 12px;
+            font-size: 15px; line-height: 1.7; white-space: pre-wrap;
+            border: 1px solid var(--border);
+        }
+
+        .loading { text-align: center; padding: 24px; color: var(--text2); display: none; }
+        .loading.show { display: block; }
+        .spinner {
+            display: inline-block; width: 22px; height: 22px;
+            border: 3px solid var(--border); border-top-color: var(--primary);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin-right: 8px; vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error { color: #e74c3c; margin-top: 8px; display: none; font-size: 14px; }
+        .error.show { display: block; }
+
+        /* Template selector */
+        .template-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+        .tpl-btn {
+            padding: 12px; border: 2px solid var(--border); border-radius: 12px;
+            background: transparent; cursor: pointer; text-align: left;
+            color: var(--text2); transition: all 0.3s;
+        }
+        .tpl-btn:hover { border-color: var(--primary); }
+        .tpl-btn.active { border-color: var(--primary); background: rgba(102,126,234,0.1); }
+        .tpl-btn .tpl-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+        .tpl-btn .tpl-name { font-size: 14px; font-weight: 600; color: var(--text); }
+        .tpl-btn .tpl-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .input-hint { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+
+        .badge {
+            display: inline-block; background: rgba(102,126,234,0.15); color: var(--primary);
+            padding: 2px 10px; border-radius: 10px; font-size: 11px; font-weight: 600;
+            margin-left: 6px;
+        }
+
+        footer { text-align: center; padding: 20px 0; font-size: 12px; color: var(--text2); }
+        @media (max-width: 600px) {
+            .container { padding: 12px; }
+            .card { padding: 18px; }
+            .template-grid { grid-template-columns: 1fr; }
+            .tabs { overflow-x: auto; }
+            .tab { font-size: 13px; padding: 8px 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">AI Writer <span>Pro</span></div>
+            <button class="dark-toggle" id="darkToggle" title="Toggle dark mode">🌙</button>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="polish">✏️ Polish</button>
+            <button class="tab" data-tab="grammar">✅ Grammar</button>
+            <button class="tab" data-tab="translate">🌍 Translate+</button>
+            <button class="tab" data-tab="generate">⚡ Generate</button>
+        </div>
+
+        <!-- TAB 1: Polish -->
+        <div class="tab-content active" id="tab-polish">
+            <div class="card">
+                <h2 style="font-size:18px;margin-bottom:4px;">Polish Your Writing</h2>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:8px;">Fix grammar, improve style, and make it sound natural</p>
+                <textarea id="polishInput" placeholder="Paste your English text here..."></textarea>
+                <div class="char-count"><span id="polishCount">0</span> characters</div>
+                <div class="modes" id="polishModes">
+                    <button class="mode-btn active" data-mode="general">General</button>
+                    <button class="mode-btn" data-mode="professional">Professional</button>
+                    <button class="mode-btn" data-mode="academic">Academic</button>
+                    <button class="mode-btn" data-mode="casual">Casual</button>
+                    <button class="mode-btn" data-mode="shorten">Shorten</button>
+                    <button class="mode-btn" data-mode="expand">Expand</button>
+                </div>
+                <div class="btn-row">
+                    <button class="btn" id="polishBtn">✏️ Polish It</button>
+                    <button class="btn btn-secondary" id="polishClear">Clear</button>
+                </div>
+                <div class="loading" id="polishLoading"><span class="spinner"></span> Polishing...</div>
+                <div class="error" id="polishError"></div>
+                <div class="result-box" id="polishResult">
+                    <div class="result-header">
+                        <span class="result-label">Polished Result</span>
+                        <div class="result-actions">
+                            <button class="copy-btn" onclick="copyResult('polishResultText')">📋 Copy</button>
+                        </div>
+                    </div>
+                    <div class="result-text" id="polishResultText"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Grammar Check -->
+        <div class="tab-content" id="tab-grammar">
+            <div class="card">
+                <h2 style="font-size:18px;margin-bottom:4px;">Grammar Check</h2>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:8px;">Fix errors but keep your original writing style</p>
+                <textarea id="grammarInput" placeholder="Paste text to check for grammar errors..."></textarea>
+                <div class="char-count"><span id="grammarCount">0</span> characters</div>
+                <div class="btn-row">
+                    <button class="btn" id="grammarBtn">✅ Fix Grammar</button>
+                    <button class="btn btn-secondary" id="grammarClear">Clear</button>
+                </div>
+                <div class="loading" id="grammarLoading"><span class="spinner"></span> Checking grammar...</div>
+                <div class="error" id="grammarError"></div>
+                <div class="result-box" id="grammarResult">
+                    <div class="result-header">
+                        <span class="result-label">Corrected Text</span>
+                        <div class="result-actions">
+                            <button class="copy-btn" onclick="copyResult('grammarResultText')">📋 Copy</button>
+                        </div>
+                    </div>
+                    <div class="result-text" id="grammarResultText"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Translate + Polish -->
+        <div class="tab-content" id="tab-translate">
+            <div class="card">
+                <h2 style="font-size:18px;margin-bottom:4px;">Translate to Natural English</h2>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:8px;">Write in ANY language, get polished English <span class="badge">KILLER FEATURE</span></p>
+                <textarea id="translateInput" placeholder="Write in Chinese, Spanish, Japanese, French... any language!&#10;&#10;Example: 我想申请你们公司的工作，我有五年编程经验"></textarea>
+                <div class="char-count"><span id="translateCount">0</span> characters</div>
+                <div class="btn-row">
+                    <button class="btn" id="translateBtn">🌍 Translate & Polish</button>
+                    <button class="btn btn-secondary" id="translateClear">Clear</button>
+                </div>
+                <div class="loading" id="translateLoading"><span class="spinner"></span> Translating...</div>
+                <div class="error" id="translateError"></div>
+                <div class="result-box" id="translateResult">
+                    <div class="result-header">
+                        <span class="result-label">Natural English</span>
+                        <div class="result-actions">
+                            <button class="copy-btn" onclick="copyResult('translateResultText')">📋 Copy</button>
+                        </div>
+                    </div>
+                    <div class="result-text" id="translateResultText"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Generate -->
+        <div class="tab-content" id="tab-generate">
+            <div class="card">
+                <h2 style="font-size:18px;margin-bottom:4px;">Generate Writing</h2>
+                <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">AI writes from scratch for you</p>
+                <div class="template-grid" id="templates">
+                    <button class="tpl-btn active" data-tpl="email">
+                        <span class="tpl-icon">📧</span>
+                        <span class="tpl-name">Email</span>
+                        <span class="tpl-desc">Professional business email</span>
+                    </button>
+                    <button class="tpl-btn" data-tpl="linkedin">
+                        <span class="tpl-icon">💼</span>
+                        <span class="tpl-name">LinkedIn</span>
+                        <span class="tpl-desc">Message to recruiter</span>
+                    </button>
+                    <button class="tpl-btn" data-tpl="reply">
+                        <span class="tpl-icon">↩️</span>
+                        <span class="tpl-name">Reply</span>
+                        <span class="tpl-desc">Polite email reply</span>
+                    </button>
+                    <button class="tpl-btn" data-tpl="complaint">
+                        <span class="tpl-icon">⚠️</span>
+                        <span class="tpl-name">Complaint</span>
+                        <span class="tpl-desc">Polite complaint</span>
+                    </button>
+                    <button class="tpl-btn" data-tpl="apology">
+                        <span class="tpl-icon">🙏</span>
+                        <span class="tpl-name">Apology</span>
+                        <span class="tpl-desc">Sincere apology</span>
+                    </button>
+                </div>
+                <p class="input-hint">Describe what you need:</p>
+                <textarea id="generateInput" placeholder="Example: I want to apply for a software engineering position at Google. I have 5 years of experience with Python and React. Ask for a referral."></textarea>
+                <div class="btn-row">
+                    <button class="btn" id="generateBtn">⚡ Generate</button>
+                    <button class="btn btn-secondary" id="generateClear">Clear</button>
+                </div>
+                <div class="loading" id="generateLoading"><span class="spinner"></span> Generating...</div>
+                <div class="error" id="generateError"></div>
+                <div class="result-box" id="generateResult">
+                    <div class="result-header">
+                        <span class="result-label">Generated Text</span>
+                        <div class="result-actions">
+                            <button class="copy-btn" onclick="copyResult('generateResultText')">📋 Copy</button>
+                        </div>
+                    </div>
+                    <div class="result-text" id="generateResultText"></div>
+                </div>
+            </div>
+        </div>
+
+        <footer>AI Writer Pro - Built with SiliconFlow API</footer>
+    </div>
+
+    <script>
+        // Dark mode
+        const darkToggle = document.getElementById('darkToggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) { document.body.classList.add('dark'); darkToggle.textContent = '☀️'; }
+        darkToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark');
+            darkToggle.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        });
+
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Char counts
+        document.querySelectorAll('textarea').forEach(ta => {
+            ta.addEventListener('input', () => {
+                const id = ta.id.replace('Input', '');
+                const countEl = document.getElementById(id + 'Count');
+                if (countEl) countEl.textContent = ta.value.length;
+            });
+        });
+
+        // Mode buttons
+        document.querySelectorAll('.modes').forEach(group => {
+            group.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    group.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                });
+            });
+        });
+
+        // Template buttons
+        document.querySelectorAll('.tpl-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.tpl-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        // API call helper
+        async function callAPI(url, data, loadingId, errorId, resultId, resultTextId) {
+            document.getElementById(loadingId).classList.add('show');
+            document.getElementById(errorId).classList.remove('show');
+            document.getElementById(resultId).classList.remove('show');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    document.getElementById(resultTextId).textContent = json.result;
+                    document.getElementById(resultId).classList.add('show');
+                } else {
+                    document.getElementById(errorId).textContent = json.error || 'Error occurred';
+                    document.getElementById(errorId).classList.add('show');
+                }
+            } catch(e) {
+                document.getElementById(errorId).textContent = 'Network error. Is the server running?';
+                document.getElementById(errorId).classList.add('show');
+            }
+            document.getElementById(loadingId).classList.remove('show');
+        }
+
+        function copyResult(id) {
+            const text = document.getElementById(id).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = orig, 1800);
+            });
+        }
+
+        // Polish
+        document.getElementById('polishBtn').addEventListener('click', () => {
+            const text = document.getElementById('polishInput').value.trim();
+            if (!text) { document.getElementById('polishError').textContent = 'Please enter some text'; document.getElementById('polishError').classList.add('show'); return; }
+            const style = document.querySelector('#polishModes .mode-btn.active').dataset.mode;
+            callAPI('/api/rewrite', { text, style }, 'polishLoading', 'polishError', 'polishResult', 'polishResultText');
+        });
+        document.getElementById('polishClear').addEventListener('click', () => {
+            document.getElementById('polishInput').value = '';
+            document.getElementById('polishResult').classList.remove('show');
+            document.getElementById('polishError').classList.remove('show');
+        });
+
+        // Grammar
+        document.getElementById('grammarBtn').addEventListener('click', () => {
+            const text = document.getElementById('grammarInput').value.trim();
+            if (!text) { document.getElementById('grammarError').textContent = 'Please enter some text'; document.getElementById('grammarError').classList.add('show'); return; }
+            callAPI('/api/grammar', { text }, 'grammarLoading', 'grammarError', 'grammarResult', 'grammarResultText');
+        });
+        document.getElementById('grammarClear').addEventListener('click', () => {
+            document.getElementById('grammarInput').value = '';
+            document.getElementById('grammarResult').classList.remove('show');
+            document.getElementById('grammarError').classList.remove('show');
+        });
+
+        // Translate
+        document.getElementById('translateBtn').addEventListener('click', () => {
+            const text = document.getElementById('translateInput').value.trim();
+            if (!text) { document.getElementById('translateError').textContent = 'Please enter some text'; document.getElementById('translateError').classList.add('show'); return; }
+            callAPI('/api/translate', { text }, 'translateLoading', 'translateError', 'translateResult', 'translateResultText');
+        });
+        document.getElementById('translateClear').addEventListener('click', () => {
+            document.getElementById('translateInput').value = '';
+            document.getElementById('translateResult').classList.remove('show');
+            document.getElementById('translateError').classList.remove('show');
+        });
+
+        // Generate
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            const details = document.getElementById('generateInput').value.trim();
+            if (!details) { document.getElementById('generateError').textContent = 'Please describe what you need'; document.getElementById('generateError').classList.add('show'); return; }
+            const template = document.querySelector('.tpl-btn.active').dataset.tpl;
+            callAPI('/api/generate', { template, details }, 'generateLoading', 'generateError', 'generateResult', 'generateResultText');
+        });
+        document.getElementById('generateClear').addEventListener('click', () => {
+            document.getElementById('generateInput').value = '';
+            document.getElementById('generateResult').classList.remove('show');
+            document.getElementById('generateError').classList.remove('show');
+        });
+    </script>
+</body>
+</html>
