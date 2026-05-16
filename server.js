@@ -3,11 +3,9 @@ const axios = require('axios');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 const API_KEY = process.env.SILICON_API_KEY || 'YOUR_SILICON_API_KEY_HERE';
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
 const MODEL = 'deepseek-ai/DeepSeek-V3';
 const TEMPERATURE = 0.7;
@@ -119,6 +117,13 @@ app.post('/api/generate', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log('AI Writer Pro started at http://localhost:' + PORT);
-});
+// Vercel export (handles all /api/* routes)
+module.exports = app;
+
+// Local development (node server.js)
+if (require.main === module) {
+    const PORT = process.env.PORT || 3001;
+    app.listen(PORT, () => {
+        console.log('AI Writer Pro started at http://localhost:' + PORT);
+    });
+}
