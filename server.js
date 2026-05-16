@@ -6,6 +6,7 @@ const app = express();
 const API_KEY = process.env.SILICON_API_KEY || 'YOUR_SILICON_API_KEY_HERE';
 
 app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 const MODEL = 'deepseek-ai/DeepSeek-V3';
 const TEMPERATURE = 0.7;
